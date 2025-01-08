@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Snake Game</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        background-color: rgb(165, 102, 223);
+      }
+
+      body {
+        font-family: Arial, sans-serif;
+        background-color: rgb(165, 102, 223);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      #area {
+        height: 500px;
+        width: 500px;
+        background-color: #333;
+        position: relative;
+        margin: 50px auto;
+        border: 20px solid;
+        border-image-source: repeating-linear-gradient(
+          45deg,
+          #8b0000 0%,
+          #8b0000 10px,
+          #550000 10px,
+          #550000 20px
+        );
+        border-image-slice: 1;
+        overflow: hidden;
+      }
+
+      .snake {
+        height: 20px;
+        width: 20px;
+        background-color: lime;
+        position: absolute;
+        z-index: 1;
+        border-radius: 5px;
+      }
+
+      .tail {
+        height: 20px;
+        width: 20px;
+        background-color: lime;
+        position: absolute;
+        z-index: 0;
+        border-radius: 50%;
+      }
+
+      #food {
+        height: 20px;
+        width: 20px;
+        background-color: blue;
+        position: absolute;
+        border-radius: 50%;
+        animation: glow 1s infinite alternate-reverse;
+      }
+
+      @keyframes glow {
+        0% {
+          box-shadow: 0 0 10px 2px white;
+          background-color: blue;
+        }
+        100% {
+          box-shadow: 0 0 20px 5px blue;
+          background-color: white;
+        }
+      }
+
+      .head {
+        height: 20px;
+        width: 20px;
+        background-color: lime;
+        border-radius: 0 10px 10px 0;
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        z-index: 2;
+      }
+
+      .eye {
+        height: 5px;
+        width: 5px;
+        background-color: black;
+        margin: 2.5px;
+        border-radius: 50%;
+      }
+
+      .tounge {
+        position: relative;
+        width: 40px;
+        height: 20px;
+        background-color: transparent;
+        display: flex;
+        align-items: center;
+      }
+
+      .tounge svg {
+        width: 30px;
+        height: 27px;
+        background-color: transparent;
+        transform: rotate(-270deg);
+      }
+
+      .myscore {
+        text-align: center;
+        font-size: 18px;
+        color: white;
+        margin-top: 10px;
+      }
+
+      #restartButton {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 150px;
+        height: 50px;
+        text-align: center;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        text-decoration: none;
+        font-family: sans-serif;
+        box-sizing: border-box;
+        cursor: pointer;
+        background: linear-gradient(
+          90deg,
+          yellow,
+          orange,
+          red,
+          violet,
+          purple,
+          blue,
+          yellow
+        );
+        background-size: 400%;
+        border-radius: 30px;
+        z-index: 10;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+      }
+
+      #restartButton:hover {
+        animation: animate 8s linear infinite;
+      }
+
+      @keyframes animate {
+        0% {
+          background-position: 0%;
+        }
+        100% {
+          background-position: 400%;
+        }
+      }
+
+      #restartButton:before {
+        content: "";
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        right: -5px;
+        bottom: -5px;
+        z-index: -1;
+        background: linear-gradient(45deg, #f15523, #ef3224, #7c3697);
+        background-size: 400%;
+        border-radius: 40px;
+        opacity: 0;
+        transition: 0.5%;
+      }
+
+      #restartButton:hover:before {
+        filter: blur(20px);
+        opacity: 1;
+        animation: animate 8s linear infinite;
+      }
+
+      #restartButton svg {
+        background-color: transparent;
+      }
+
+      @media screen and (max-width:500px){
+        body{
+          width: 500px;
+        }
+      }
+
+      @media screen and (max-width: 600px) {
+        #restartButton {
+          padding: 15px;
+        }
+      }
+
+      .controls {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        margin-top: 20px;
+      }
+
+      .control-row {
+        display: flex;
+        justify-content: center;
+      }
+
+      .control-button {
+        width: 50px;
+        height: 50px;
+        margin: 5px;
+        font-size: 18px;
+        font-weight: bold;
+        background-color: orange;
+        border: none;
+        border-radius: 10px;
+        color: white;
+        cursor: pointer;
+      }
+
+      .control-button:active {
+        background-color: darkorange;
+      }
+
+      @media screen and (max-width: 1280px) {
+        .controls {
+          display: flex;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="scorep"><p class="myscore">Current Score: 0</p></div>
+    <div id="area"></div>
+
+    <!-- Controls for smaller screens -->
+    <div class="controls">
+      <div class="control-row">
+        <button class="control-button" id="up">↑</button>
+      </div>
+      <div class="control-row">
+        <button class="control-button" id="left">←</button>
+        <button class="control-button" id="down">↓</button>
+        <button class="control-button" id="right">→</button>
+      </div>
+    </div>
+    <script>
+      const area = $("#area");
+      const snakeSize = 20;
+      let snake = [{ x: 100, y: 100 }]; // Initial snake position
+      let foodPosition = { x: 0, y: 0 };
+      let direction = "right"; // Initial direction
+      let score = 0;
+      let gameInterval;
+
+      function createFood() {
+        const maxX = area.width() / snakeSize;
+        const maxY = area.height() / snakeSize;
+        const x = Math.floor(Math.random() * maxX) * snakeSize;
+        const y = Math.floor(Math.random() * maxY) * snakeSize;
+        foodPosition = { x, y };
+
+        if ($("#food").length === 0) {
+          $("<div id='food'></div>").appendTo(area);
+        }
+
+        $("#food").css({ left: x + "px", top: y + "px" });
+      }
+
+      function moveSnake() {
+        const head = { ...snake[0] };
+
+        if (direction === "right") head.x += snakeSize;
+        if (direction === "left") head.x -= snakeSize;
+        if (direction === "up") head.y -= snakeSize;
+        if (direction === "down") head.y += snakeSize;
+        if (
+          head.x < 0 ||
+          head.y < 0 ||
+          head.x >= area.width() ||
+          head.y >= area.height()
+        ) {
+          $(".myscore").text(`Your Score is: ${score}`);
+          clearInterval(gameInterval);
+
+          const restartButton = $(
+            `<button id="restartButton"><svg xmlns="http://www.w3.org/2000/svg" color="white" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Restart</button>`
+          );
+
+          restartButton.on("click", () => {
+            restartButton.remove();
+            $(".myscore").text(`Current Score: 0`);
+            startGame();
+          });
+
+          area.append(restartButton);
+
+          alert(`Game Over! Final Score: ${score}`);
+          return;
+        }
+
+        for (let i = 1; i < snake.length; i++) {
+          if (snake[i].x === head.x && snake[i].y === head.y) {
+            $(".myscore").text(`Your Score is: ${score}`);
+            clearInterval(gameInterval);
+            alert(`Game Over! Final Score: ${score}`);
+            const restartButton = $(
+            `<button id="restartButton"><svg xmlns="http://www.w3.org/2000/svg" color="white" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-rotate-ccw"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Restart</button>`
+          );
+
+          restartButton.on("click", () => {
+            restartButton.remove();
+            $(".myscore").text(`Current Score: 0`);
+            startGame();
+          });
+
+          area.append(restartButton);
+            return;
+          }
+        }
+
+        snake.unshift(head);
+
+        if (head.x === foodPosition.x && head.y === foodPosition.y) {
+          score++;
+          $(".myscore").text(`Current Score: ${score}`);
+          createFood();
+        } else {
+          snake.pop();
+        }
+
+        updateSnake();
+      }
+
+      function updateSnake() {
+        area.empty();
+
+        let rotation = 0;
+        if (direction === "right") rotation = 0;
+        if (direction === "down") rotation = 90;
+        if (direction === "left") rotation = 180;
+        if (direction === "up") rotation = 270;
+
+        const head = snake[0];
+        const headDiv = $(`
+                <div class="head" style="left: ${head.x}px; top: ${
+          head.y
+        }px; transform: rotate(${rotation}deg);">
+                    <div class="eye"></div>
+                    <div class="eye"></div>
+                </div>
+                <div class="tounge" 
+         style="left: ${
+           direction === "right"
+             ? head.x + 10
+             : direction === "down"
+             ? head.x - 10
+             : direction === "left"
+             ? head.x - 30
+             : head.x - 10 // "up" or default
+         }px; 
+         top: ${
+           direction === "right"
+             ? head.y
+             : direction === "down"
+             ? head.y + 20
+             : direction === "left"
+             ? head.y
+             : head.y - 20
+         }px; 
+         transform: rotate(${rotation}deg);">
+
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36" preserveAspectRatio="xMidYMid meet">
+        <path fill="red" d="M16 0 L18 30 L20 0 Q19 4 18 4 Q17 4 16 0 Z" />
+      </svg>
+    
+    </div>
+            `);
+        headDiv.appendTo(area);
+
+        for (let i = 1; i < snake.length - 1; i++) {
+          $("<div class='snake'></div>")
+            .css({ left: snake[i].x + "px", top: snake[i].y + "px" })
+            .appendTo(area);
+        }
+
+        const tail = snake[snake.length - 1];
+        $("<div class='tail'></div>")
+          .css({ left: tail.x + "px", top: tail.y + "px" })
+          .appendTo(area);
+
+        $("<div id='food'></div>")
+          .css({ left: foodPosition.x + "px", top: foodPosition.y + "px" })
+          .appendTo(area);
+      }
+
+      function changeDirection(e) {
+        if (e.key === "ArrowRight" && direction !== "left") direction = "right";
+        if (e.key === "ArrowLeft" && direction !== "right") direction = "left";
+        if (e.key === "ArrowUp" && direction !== "down") direction = "up";
+        if (e.key === "ArrowDown" && direction !== "up") direction = "down";
+      }
+
+      $("#up").on("click", () => {
+        if (direction !== "down") direction = "up";
+      });
+      $("#down").on("click", () => {
+        if (direction !== "up") direction = "down";
+      });
+      $("#left").on("click", () => {
+        if (direction !== "right") direction = "left";
+      });
+      $("#right").on("click", () => {
+        if (direction !== "left") direction = "right";
+      });
+
+      function startGame() {
+        snake = [
+          { x: 100, y: 100 }, // Head
+          { x: 80, y: 100 }, // Body
+          { x: 80, y: 100 }, //Body
+          { x: 60, y: 100 }, //Tail
+        ];
+        direction = "right";
+        score = 0;
+        createFood();
+        gameInterval = setInterval(moveSnake, 200);
+      }
+
+      $(document).on("keydown", changeDirection);
+      startGame();
+    </script>
+  </body>
+</html>
